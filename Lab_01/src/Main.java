@@ -23,6 +23,19 @@ public class Main
 				String[] trackTwoMatches = finder.scanForTrackTwoCardInfo( fileContents );
 
 				Account[] accounts = finder.findValidAccounts( trackOneMatches, trackTwoMatches );
+
+				System.out.println(
+						"There is " + accounts.length + " piece of credit card information in the account data!\n" );
+				int place = 1;
+
+				for ( Account account : accounts )
+				{
+					System.out.println( "<Information for card number " + place + ">" );
+
+					account.print();
+
+					place++;
+				}
 			}
 			catch ( IOException e )
 			{

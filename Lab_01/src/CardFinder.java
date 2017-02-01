@@ -80,6 +80,22 @@ public class CardFinder
 
 	private Account _CreateAccount( String trackOneMatch, String trackTwoMatch )
 	{
-		return null;
+		String[] trackOneInfo = trackOneMatch.split( "\\^" );
+		String[] trackTwoInfo = trackTwoMatch.split( "=" );
+
+		String accountNumber = trackOneInfo[0].substring( 2 );
+
+		String[] nameArray = trackOneInfo[1].split( "/" );
+		String fullName = nameArray[0] + " " + nameArray[1];
+
+		String year = trackTwoInfo[1].substring( 0, 2 );
+		String month = trackTwoInfo[1].substring( 2, 4 );
+		String date = month + "/20" + year;
+
+		String pin = trackTwoInfo[1].substring( 7, 11 );
+
+		String cvv = trackTwoInfo[1].substring( 11, 14 );
+
+		return new Account( fullName, accountNumber, date, pin, cvv );
 	}
 }

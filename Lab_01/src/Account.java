@@ -4,10 +4,10 @@ public class Account
 	private String mName;
 	private String mCardNumber;
 	private String mExpiration;
-	private int mPin;
-	private int mCvv;
+	private String mPin;
+	private String mCvv;
 
-	public Account( String name, String cardNumber, String expiration, int pin, int cvv )
+	public Account( String name, String cardNumber, String expiration, String pin, String cvv )
 	{
 		mName = name;
 		mCardNumber = cardNumber;
@@ -16,28 +16,12 @@ public class Account
 		mCvv = cvv;
 	}
 
-	public String getName()
+	public void print()
 	{
-		return mName;
-	}
-
-	public String getCardNumber()
-	{
-		return mCardNumber;
-	}
-
-	public String getExpiration()
-	{
-		return mExpiration;
-	}
-
-	public int getPin()
-	{
-		return mPin;
-	}
-
-	public int getCvv()
-	{
-		return mCvv;
+		System.out.println( "Cardholder's Name: " + mName );
+		System.out.println( "Card Number: " + mCardNumber );
+		System.out.println( "Expiration Date: " + mExpiration );
+		System.out.println( "Encrypted PIN " + mPin );
+		System.out.println( "CVV Number: : " + mCvv );
 	}
 }
