@@ -22,10 +22,9 @@ public class DiskManager
 
 	// region Methods
 
-	public boolean diskFull()
+	public double diskFull()
 	{
 		FileStore fileStore;
-		boolean diskFull = false;
 
 		try
 		{
@@ -34,18 +33,14 @@ public class DiskManager
 			long usableSpace = fileStore.getUsableSpace();
 			long totalSpace = fileStore.getTotalSpace();
 
-			if ( usableSpace / totalSpace >= 0.9 )
-			{
-				diskFull = true;
-			}
+			return 1 - ((double) usableSpace / (double) totalSpace);
 		}
 		catch ( IOException e )
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
-		return diskFull;
+		return 1;
 	}
 
 	public Path getRoot()
