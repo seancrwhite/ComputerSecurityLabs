@@ -1,3 +1,7 @@
+/**
+ * @author Sean White and Tyler Bass
+ *		
+ */
 
 public class Main
 {
