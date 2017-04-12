@@ -9,11 +9,11 @@ import org.jnetpcap.protocol.tcpip.Tcp;
 public class ids {
     public static void main( String[] args ) {
         //File retreival
-        File policyFile, traceFile;
+        String policyFile, traceFile;
 
         if ( args.length >= 2 ) {
-            policyFile = new File( args[0] );
-            traceFile = new File( args[1] );
+            policyFile = args[0];
+            traceFile = args[1];
         } else {
             System.out.println( "Invalid input" );
             return;
@@ -22,13 +22,16 @@ public class ids {
         final StringBuilder errorBuffer = new StringBuilder();
         final Pcap pcap = Pcap.openOffline( traceFile, errorBuffer );
 
-        if(pcap == null){
+        if (pcap == null) {
             System.err.println(errorBuffer);
-        }else{
+        } else {
             pcap.loop(Pcap.LOOP_INFINITE, new JPacketHandler<StringBuilder>() {
                 final Tcp tcp = new Tcp();
 
-                
+                @Override
+                public void nextPacket( JPacket packet, StringBuilder errorBuffer ) {
+
+                }
             }, errorBuffer);
         }
     }
