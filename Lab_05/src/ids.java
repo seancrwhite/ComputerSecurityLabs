@@ -1,6 +1,8 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -10,10 +12,14 @@ import org.jnetpcap.packet.JPacketHandler;
 import org.jnetpcap.packet.format.FormatUtils;
 import org.jnetpcap.protocol.network.Ip4;
 import org.jnetpcap.protocol.tcpip.Tcp;
+import org.jnetpcap.protocol.tcpip.Udp;
+
+import javafx.util.Pair;
 
 public class ids
 {
 	public static int matches, currentRule = 0;
+	public static List<Pair<Integer, StringBuilder>> packets = new ArrayList<Pair<Integer, StringBuilder>>();
 	
 	public static void main( String[] args ) throws FileNotFoundException
 	{
@@ -30,22 +36,17 @@ public class ids
 			
 			Scanner policy = new Scanner( new File( policyFile ) );
 			host = policy.nextLine().substring(5);
-			System.out.println(host);
 			policy.nextLine();
 			name = policy.nextLine().substring(5);
-			System.out.println(name);
 			type = policy.nextLine().substring(5);
-			System.out.println(type);
 			if (type.equals("stateless")) {
 				proto = policy.nextLine().substring(6);
-				System.out.println(proto);
+			} else {
+				proto = "tcp";
 			}
 			host_port = policy.nextLine().substring(10);
-			System.out.println(host_port);
 			attacker_port = policy.nextLine().substring(14);
-			System.out.println(attacker_port);
 			attacker = policy.nextLine().substring(9);
-			System.out.println(attacker);
 			while (policy.hasNextLine()) {
 				regexes.add(policy.nextLine());
 			}
@@ -69,14 +70,21 @@ public class ids
 			{
 				final Ip4 ip4 = new Ip4();
 				final Tcp tcp = new Tcp();
+				final Udp udp = new Udp();
 
 				@Override
 				public void nextPacket( JPacket packet, StringBuilder errorBuffer )
 				{
-					if ( packet.hasHeader( Tcp.ID ) && packet.hasHeader( ip4 ) ) {
-						
-						byte[] payload = packet.getHeader(tcp).getPayload();
-						String text = FormatUtils.hexdumpCombined(payload, 0, 0, false, true, false).replaceAll("\n *", "");
+					boolean useudp = proto.equals("udp");
+					
+					if ( (packet.hasHeader( Tcp.ID ) || useudp) && (packet.hasHeader( Udp.ID ) || !useudp) && packet.hasHeader( ip4 ) ) {
+						byte[] payload;
+						if (useudp) {
+							payload = packet.getHeader(udp).getPayload();
+						} else {
+							payload = packet.getHeader(tcp).getPayload();
+						}
+						String text = new String(payload);
 						
 						String regex = regexes.get(currentRule);
 						boolean from = false;
@@ -93,16 +101,54 @@ public class ids
 							if ((from && destination.equals(attacker))
 							&& (!from && source.equals(attacker))
 							|| attacker.equals("any")) {
-								String sourcePort = Integer.toString(tcp.source());
-								String destinationPort = Integer.toString(tcp.destination());
+								String sourcePort;
+								String destinationPort;
+								if (useudp) {
+									sourcePort = Integer.toString(udp.source());
+									destinationPort = Integer.toString(udp.destination());
+								} else {
+									sourcePort = Integer.toString(tcp.source());
+									destinationPort = Integer.toString(tcp.destination());
+								}
 								String hostPort = from ? sourcePort : destinationPort;
 								String attackerPort = from ? destinationPort : sourcePort;
 								if (host_port.equals("any") || host_port.equals(hostPort)) {
 									if (attacker_port.equals("any")
 									|| attacker_port.equals(attackerPort)) {
-										if (text.matches(".*" + regex + ".*")) {
-											System.out.println(text);
+										if (type.equals("stateful")) {
+											boolean foundip = false;
+											for (Pair item : packets) {
+												if ((int) item.getKey() == ip4.sourceToInt()) {
+													((StringBuilder) item.getValue()).append(text);
+													text = ((StringBuilder) item.getValue()).toString();
+													foundip = true;
+												}
+											}
+											if (!foundip) {
+												StringBuilder sb = new StringBuilder(text);
+												Pair<Integer, StringBuilder> item = new Pair<Integer, StringBuilder>(ip4.sourceToInt(), sb);
+												packets.add(item);
+												text = ((StringBuilder) item.getValue()).toString();
+											}
+										}
+
+										Pattern p = Pattern.compile(regex);
+										Matcher m = p.matcher(text);
+										if (m.find()) {
 											currentRule++;
+											matches++;
+											
+											if (type.equals("stateful")) {
+												for (Pair item : packets) {
+													if ((int) item.getKey() == ip4.sourceToInt()) {
+														((StringBuilder) item.getValue()).setLength(0);
+													}
+												}
+											}
+											
+											if (matches == regexes.size()) {
+												System.out.println("Intrusion Detected!");
+											}
 											if (currentRule == regexes.size()) {
 												currentRule = 0;
 											}
